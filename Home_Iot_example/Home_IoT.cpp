@@ -35,6 +35,7 @@ Author:
 #include <vector>
 
 #define FACTORY_RESET_PIN 15
+#define STATUS_LED_PIN 2
 #define CONFIG_NAMESPACE "config"
 #define DEVICE_TYPE "SMART_SWITCH" // Loại thiết bị mà edge đảm nhận vai trò
 
@@ -295,6 +296,9 @@ void startAP()
 {
     String apName = getApName();
 
+    // kiểm tra nếu đã cấu hình lần đầu thì phải ẩn AP đi
+    bool hidden = config.initialized;
+
     WiFi.softAPdisconnect(true);
     delay(100);
 
@@ -303,7 +307,9 @@ void startAP()
 
     WiFi.softAP(
         apName.c_str(),
-        "12345678"
+        "12345678",
+        1,
+        hidden
     );
 
     Serial.println();
@@ -659,9 +665,16 @@ void checkFactoryReset()
                 "Factory Reset"
             );
 
-            prefs.clear();
+            pinMode(STATUS_LED_PIN, OUTPUT);
+            digitalWrite(STATUS_LED_PIN,false);
+            delay(200);
 
-            delay(1000);
+            digitalWrite(STATUS_LED_PIN,true);
+            prefs.clear();
+            delay(100);
+            digitalWrite(STATUS_LED_PIN,false);
+
+            delay(3000);
 
             ESP.restart();
         }

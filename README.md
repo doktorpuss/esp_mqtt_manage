@@ -311,6 +311,53 @@ Home_IoT
 
 ---
 
+> [!IMPORTANT]
+> ## Accessing Configuration AP After Initial Setup
+>
+> For security reasons, the ESP Access Point (AP) is **visible only during the first configuration** (or after a factory reset).
+>
+> Once the device has been configured successfully, the configuration AP will become **hidden**.
+>
+> If you need to configure the device again (for example, after changing the WiFi network), you must manually connect to the hidden WiFi network using:
+>
+> - **SSID:** `<deviceName>`
+> - **Password:** `12345678`
+>
+> Since the AP is hidden, it will not appear in the list of available WiFi networks. You must manually add a hidden network from your operating system's WiFi settings.
+>
+> The AP becomes visible again only after performing a **factory reset**.
+
+# Factory Reset
+
+If you forget the WiFi credentials, MQTT settings, or need to restore the device to its initial state, you can perform a Factory Reset.
+
+A Factory Reset will erase all stored configuration, including:
+
+- Device Name
+- WiFi SSID
+- WiFi Password
+- MQTT Server
+- MQTT Port
+- MQTT Username
+- MQTT Password
+
+After the reset:
+
+- All saved settings are removed.
+- The device restarts automatically.
+- The configuration Access Point becomes **visible** again.
+- The default AP password is restored to **12345678**.
+
+## How to Perform a Factory Reset
+
+1. Power on the ESP32.
+2. Connect `D15` on ESP to `GND` for 5s.
+3. Wait until the status LED flash.
+4. Release `D15` and `GND`.
+5. The device will reboot and enter configuration mode.
+
+You can then reconnect to the configuration AP and set up the device again.
+
 # License
 
 MIT License.

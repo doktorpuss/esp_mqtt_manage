@@ -316,6 +316,53 @@ Home_IoT
 
 ---
 
+> [**! LƯU Ý QUAN TRỌNG**]
+> ## Truy cập AP cấu hình sau lần thiết lập đầu tiên
+>
+> Để tăng tính bảo mật, Access Point (AP) của ESP **chỉ hiển thị trong lần cấu hình đầu tiên** hoặc sau khi **Factory Reset**.
+>
+> Sau khi cấu hình thành công, AP sẽ được chuyển sang chế độ **ẩn (Hidden)**.
+>
+> Nếu cần cấu hình lại thiết bị (ví dụ khi thay đổi mạng WiFi), bạn cần **kết nối thủ công tới mạng WiFi ẩn** với thông tin:
+>
+> - **SSID:** `<deviceName>`
+> - **Mật khẩu:** `12345678`
+>
+> Do AP ở chế độ ẩn nên sẽ **không xuất hiện trong danh sách các mạng WiFi khả dụng**. Bạn cần sử dụng chức năng **Add Hidden Network** (hoặc tương đương) trên điện thoại hoặc máy tính để kết nối.
+>
+> AP sẽ chỉ hiển thị trở lại sau khi thực hiện **Factory Reset**.
+
+# Factory Reset
+
+Nếu quên thông tin WiFi, cấu hình MQTT hoặc muốn đưa thiết bị về trạng thái ban đầu, bạn có thể thực hiện **Factory Reset**.
+
+Factory Reset sẽ xóa toàn bộ cấu hình đã lưu, bao gồm:
+
+- Device Name
+- WiFi SSID
+- WiFi Password
+- MQTT Server
+- MQTT Port
+- MQTT Username
+- MQTT Password
+
+Sau khi Factory Reset:
+
+- Toàn bộ cấu hình sẽ bị xóa.
+- Thiết bị sẽ tự khởi động lại.
+- Access Point cấu hình sẽ **hiển thị trở lại**.
+- Mật khẩu mặc định của AP là **12345678**.
+
+## Cách thực hiện Factory Reset
+
+1. Cấp nguồn cho ESP32.
+2. Nối chân `D15` của ESP với `GND` trong 5 giây.
+3. Chờ đến khi đèn trạng thái chớp tắt.
+4. Ngắt kết nối `D15` với `GND`.
+5. Thiết bị sẽ khởi động lại và chuyển về chế độ cấu hình.
+
+Sau đó bạn có thể kết nối lại với Access Point của thiết bị để thực hiện cấu hình từ đầu.
+
 # Giấy phép
 
 MIT License.
