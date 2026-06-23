@@ -91,6 +91,45 @@ struct Config
 
 Config config;
 
+/*
+    Trường cấu hình mở rộng do người dùng định nghĩa.
+
+    Các trường này sẽ:
+
+        - Tự động hiển thị trên Web Config.
+        - Tự động Load từ Preferences.
+        - Tự động Save xuống Preferences.
+
+    Ví dụ:
+
+        Target MAC
+        API Key
+        Broadcast Port
+        Sensor Offset
+        Device Location
+
+    Sau này có thể mở rộng thêm:
+
+        - Checkbox
+        - Select
+        - Number
+        - ReadOnly
+        - Placeholder
+*/
+struct CustomConfigField
+{
+    String key;
+    String label;
+    String value;
+    String defaultValue;
+    FieldType type;
+};
+
+/*
+    Danh sách toàn bộ trường cấu hình mở rộng.
+*/
+std::vector<CustomConfigField> customFields;
+
 unsigned long resetPressTime = 0;
 bool factoryResetTriggered = false;
 
@@ -182,6 +221,18 @@ void loadConfig()
 
     config.webUsername =
         prefs.getString("web_user", "home-iot");
+
+    /*
+    Load toàn bộ cấu hình mở rộng.
+    */
+    for(auto &field : customFields)
+    {
+        field.value =
+            prefs.getString(
+                field.key.c_str(),
+                field.defaultValue
+            );
+    }
 }
 
 /*
@@ -253,6 +304,108 @@ void saveConfig()
         "web_user",
         config.webUsername
     );
+
+    /*
+    Lưu toàn bộ cấu hình mở rộng.
+    */
+    for(auto &field : customFields)
+    {
+        prefs.putString(
+            field.key.c_str(),
+            field.value
+        );
+    }
+}
+
+/*
+    Đăng ký một trường cấu hình mở rộng.
+
+    Hàm này chỉ nên được gọi trong setup()
+    trước HomeIoT_begin().
+
+    Nếu key đã tồn tại,
+    hàm sẽ bỏ qua để tránh trùng lặp.
+
+    Sau khi đăng ký,
+    trường sẽ được:
+
+        - Load tự động
+        - Save tự động
+        - Sinh HTML tự động
+*/
+void addCustomField(
+    const String& key,
+    const String& label,
+    const String& defaultValue,
+    FieldType type
+)
+{
+    for(auto &field : customFields)
+    {
+        if(field.key == key)
+        {
+            return;
+        }
+    }
+
+    CustomConfigField field;
+
+    field.key = key;
+    field.label = label;
+    field.defaultValue = defaultValue;
+    field.value = defaultValue;
+    field.type = TEXT;
+
+    customFields.push_back(field);
+}
+
+/*
+    Đọc giá trị của một trường cấu hình mở rộng.
+
+    Nếu không tìm thấy key,
+    trả về chuỗi rỗng.
+*/
+String getCustomField(
+    const String& key
+)
+{
+    for(auto &field : customFields)
+    {
+        if(field.key == key)
+        {
+            return field.value;
+        }
+    }
+
+    return "";
+}
+
+/*
+    Cập nhật giá trị của một trường cấu hình mở rộng.
+
+    Hàm chỉ cập nhật dữ liệu trong RAM.
+
+    Để lưu xuống Flash cần:
+
+        saveConfig()
+
+    hoặc
+
+        Save trên Web Config.
+*/
+void setCustomField(
+    const String& key,
+    const String& value
+)
+{
+    for(auto &field : customFields)
+    {
+        if(field.key == key)
+        {
+            field.value = value;
+            return;
+        }
+    }
 }
 
 /*
@@ -296,8 +449,8 @@ void startAP()
 {
     String apName = getApName();
 
-    // kiểm tra nếu đã cấu hình lần đầu thì phải ẩn AP đi
-    bool hidden = config.initialized;
+    // kiểm tra nếu đã cấu hình lần đầu hoặc đã kết nối wifi thì phải ẩn AP đi
+    bool hidden = config.initialized && (WiFi.status() == WL_CONNECTED);
 
     WiFi.softAPdisconnect(true);
     delay(100);
@@ -320,6 +473,9 @@ void startAP()
 
     Serial.println("Password: 12345678");
     Serial.println("IP: 192.168.4.1");
+    
+    Serial.print("hidden: ");
+    Serial.println(hidden);
 }
 
 /*
@@ -409,51 +565,85 @@ String makePage()
 
     html += "<form method='POST' action='/save'>";
 
-    html += "Device name<br>";
-    html += "<input name='deviceName' value='" +
-            config.deviceName + "'><br><br>";
-
-    html += "WiFi SSID<br>";
-    html += "<input name='ssid' value='" +
-            config.wifiSSID + "'><br><br>";
-
-    html += "WiFi Password<br>";
-    html += "<input type='password' name='wifi_pw' value='" +
-            config.wifiPassword + "'><br><br>";
-
-    html += "MQTT Server<br>";
-    html += "<input name='mqtt_srv' value='" +
-            config.mqttServer + "'><br><br>";
-
-    html += "MQTT Port<br>";
-    html += "<input name='mqtt_port' value='" +
-            String(config.mqttPort) + "'><br><br>";
-
-    html += "MQTT Topic<br>";
-    html += "<input name='mqtt_topic' value='" +
-            config.mqttTopic + "'><br><br>";
-
-    html += "MQTT Username<br>";
-    html += "<input name='mqtt_user' value='" +
-            config.mqttUsername + "'><br><br>";
-
-    html += "MQTT Password<br>";
-    html += "<input type='password' name='mqtt_pw' value='" +
-            config.mqttPassword + "'><br><br>";
-
+    
     if(!config.initialized)
     {
-        html += "Admin Password<br>";
-
-        html +=
-            "<input "
-            "type='password' "
-            "name='web_pw'>"
-            "<br><br>";
-
         html += "Username<br>";
-        html +=
-            "<input name='web_username' value='home-iot'><br><br>";
+        html += "<input name='web_username' value='home-iot'><br><br>";
+        
+        html += "Admin Password<br>";
+        html +="<input type='password' name='web_pw'><br><br>";
+    }
+
+    html += "WiFi SSID<br>";
+    html += "<input name='ssid' value='" + config.wifiSSID + "'><br><br>";
+
+    html += "WiFi Password<br>";
+    html += "<input type='password' name='wifi_pw' value='" + config.wifiPassword + "'><br><br>";
+
+    html += "MQTT Server<br>";
+    html += "<input name='mqtt_srv' value='" + config.mqttServer + "'><br><br>";
+
+    html += "MQTT Port<br>";
+    html += "<input name='mqtt_port' value='" + String(config.mqttPort) + "'><br><br>";
+
+    html += "MQTT Topic<br>";
+    html += "<input name='mqtt_topic' value='" + config.mqttTopic + "'><br><br>";
+
+    html += "MQTT Username<br>";
+    html += "<input name='mqtt_user' value='" + config.mqttUsername + "'><br><br>";
+
+    html += "MQTT Password<br>";
+    html += "<input type='password' name='mqtt_pw' value='" + config.mqttPassword + "'><br><br>";
+
+    html += "Device name<br>";
+    html += "<input name='deviceName' value='" + config.deviceName + "'><br><br>";
+
+    /*
+    Sinh giao diện cho toàn bộ
+    cấu hình mở rộng do người dùng đăng ký.
+    */
+    if(!customFields.empty())
+    {
+        html += "<hr>";
+        html += "<h3>Custom Configuration</h3>";
+
+        for(auto &field : customFields)
+        {
+            html += field.label;
+            html += "<br>";
+
+            html += "<input ";
+
+            html += "type='";
+            
+            switch(field.type)
+            {
+                case TEXT:
+                    html += "text";
+                    break;
+                case PASSWORD:
+                    html += "password";
+                    break;
+                case NUMBER:
+                    html += "number";
+                    break;
+                // case CHECKBOX:               Not support yet
+                //     html += "checkbox";
+                //     break;
+                default:
+                    html += "text";
+                    break;
+            }
+
+            html += "' name='";
+            html += field.key;
+            html += "' value='";
+            html += field.value;
+            html += "'>";
+
+            html += "<br><br>";
+        }
     }
 
     html += "<input type='submit' value='Save'>";
@@ -578,6 +768,18 @@ void handleSave()
         config.webUsername = username;
 
         config.initialized = true;
+    }
+
+    /*
+    Cập nhật toàn bộ cấu hình mở rộng
+    từ dữ liệu POST.
+    */
+    for(auto &field : customFields)
+    {
+        field.value =
+            server.arg(
+                field.key
+            );
     }
 
     saveConfig();
@@ -1071,19 +1273,11 @@ void HomeIoT_begin()
 
     loadConfig();
 
-    startAP();
-
-    bool wifiOK = false;
-
     if(config.initialized)
     {
-        wifiOK = connectWiFi();
+        connectWiFi();
     }
-
-    // if(!wifiOK)
-    // {
-    //     startAP();
-    // }
+    startAP();
 
     setupWebServer();
 
@@ -1109,12 +1303,26 @@ void HomeIoT_begin()
         - Relay control
         - Heartbeat publish
 */
+
+static void every_5sec(){
+    static long lastTime = 0;
+    static String Wifi_status;
+    if(millis() - lastTime > 5000){
+        lastTime = millis();
+        Wifi_status = (WiFi.status() == WL_CONNECTED) ? "true" : "false"; 
+        Serial.println("Status: " + Wifi_status);
+    }
+}
+
 void HomeIoT_loop()
 {
-    // if(WiFi.status() != WL_CONNECTED){
-    //     startAP();
-    //     while(WiFi.status() != WL_CONNECTED){}
-    // }
+    static bool wifi_state = false;
+    if(wifi_state != (WiFi.status() == WL_CONNECTED)){
+        startAP();
+        wifi_state = (WiFi.status() == WL_CONNECTED);
+    }
+
+    every_5sec();
 
     server.handleClient();
 

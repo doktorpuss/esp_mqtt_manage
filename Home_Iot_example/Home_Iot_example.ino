@@ -65,6 +65,9 @@ void setup()
     
     Serial.begin(115200);
 
+    addCustomField("custom1", "Custom Field 1");
+    addCustomField("custom2", "Custom Field 2","Default value for custom2",TEXT);
+
     HomeIoT_begin();
 
     registerHandler("status",statusHandler);
@@ -73,7 +76,17 @@ void setup()
     registerHandler("led_state", ledStateHandler);
 }
 
+static void every_5sec(){
+    static long lastTime = 0;
+    if(millis() - lastTime > 5000){
+        lastTime = millis();
+        Serial.println("Custom 1 value: " + getCustomField("custom1"));
+        Serial.println("Custom 2 value: " + getCustomField("custom2"));
+    }
+}
+
 void loop()
 {
+    every_5sec();
     HomeIoT_loop();
 }
