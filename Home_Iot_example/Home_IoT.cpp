@@ -377,7 +377,7 @@ String getCustomField(
         }
     }
 
-    return "";
+    return field.defaultValue;
 }
 
 /*

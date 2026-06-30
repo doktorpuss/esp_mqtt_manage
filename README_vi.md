@@ -207,21 +207,94 @@ Các thông tin này vẫn được giữ sau khi khởi động lại.
 
 ---
 
-# Tùy chỉnh giao diện Web
+# Trường cấu hình mở rộng (Custom Configuration Fields)
 
-Trang cấu hình được tạo bởi hàm:
+Ngoài các thông tin cấu hình được tích hợp sẵn (Wi-Fi, MQTT, Web Authentication...), thư viện còn cho phép ứng dụng đăng ký thêm các trường cấu hình riêng.
+
+Các trường này sẽ tự động:
+
+* hiển thị trên trang cấu hình Web;
+* được đọc từ bộ nhớ sau khi khởi động;
+* được lưu xuống bộ nhớ khi người dùng nhấn **Save**.
+
+Nhờ đó, người dùng có thể mở rộng giao diện cấu hình mà không cần sửa đổi logic bên trong thư viện.
+
+### Đăng ký một trường cấu hình
+
+Các trường nên được đăng ký trước khi gọi `HomeIoT_begin()`.
 
 ```cpp
-makePage()
+registerCustomField({
+    "target_mac",
+    "Target MAC Address",
+    "AA:BB:CC:DD:EE:FF"
+});
+
+registerCustomField({
+    "broadcast_ip",
+    "Broadcast IP",
+    "192.168.1.255"
+});
 ```
 
-trong file:
+Mỗi trường gồm các thành phần:
 
-```
-Home_IoT.cpp
+| Thành phần     | Ý nghĩa                                                      |
+| -------------- | ------------------------------------------------------------ |
+| `key`          | Khóa duy nhất dùng để lưu trong bộ nhớ.                      |
+| `label`        | Tên hiển thị trên trang cấu hình Web.                        |
+| `defaultValue` | Giá trị mặc định khi chưa có dữ liệu được lưu.               |
+| `value`        | Giá trị hiện tại của trường (được thư viện quản lý tự động). |
+
+---
+
+### Đọc giá trị
+
+```cpp
+String mac = getCustomField("target_mac");
 ```
 
-Nếu muốn thay đổi giao diện hoặc bố cục trang cấu hình, hãy chỉnh sửa nội dung của hàm `makePage()`.
+---
+
+### Ghi giá trị
+
+```cpp
+setCustomField(
+    "target_mac",
+    "11:22:33:44:55:66"
+);
+```
+
+Giá trị mới sẽ được lưu xuống bộ nhớ khi cấu hình được lưu.
+
+---
+
+### Lưu trữ
+
+Các trường cấu hình mở rộng được lưu chung với cấu hình mặc định của thư viện:
+
+* ESP32 → Preferences (NVS)
+* ESP8266 → EEPROM (dự kiến hỗ trợ)
+
+Người dùng không cần tự viết thêm mã để load hoặc save các trường này.
+
+---
+
+### Một số ứng dụng
+
+Custom Configuration Fields phù hợp để lưu các thông tin đặc thù của từng dự án, ví dụ:
+
+* Địa chỉ MAC của thiết bị Wake-on-LAN
+* Broadcast IP
+* Thông số IP tĩnh
+* Giá trị hiệu chuẩn (Calibration)
+* Offset cảm biến
+* Vị trí lắp đặt thiết bị
+* MQTT Topic riêng
+* API Key
+* Các tham số cấu hình đặc thù khác
+
+Mọi thông tin cấu hình riêng của ứng dụng cần được lưu lâu dài đều có thể triển khai thông qua **Custom Configuration Fields**.
 
 ---
 

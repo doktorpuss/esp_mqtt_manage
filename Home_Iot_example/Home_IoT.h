@@ -67,7 +67,7 @@ enum FieldType
  * @param label         Tiêu đề hiển thị trên Web.
  * @param defaultValue  Giá trị mặc định.
  * @param type          Kiểu trường.
- */
+ */r
 void addCustomField(
     const String& key,
     const String& label,

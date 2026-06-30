@@ -190,15 +190,92 @@ All settings are stored using ESP32 Preferences.
 
 ---
 
-# Configuration Storage
+# Custom Configuration Fields
 
-The library stores:
+Besides the built-in configuration items (Wi-Fi, MQTT, Web Authentication, etc.), the library also allows applications to register additional configuration fields that are automatically:
 
-- Device Name
-- WiFi credentials
-- MQTT settings
+* displayed on the configuration webpage;
+* loaded from persistent storage;
+* saved back to flash memory.
 
-These settings are preserved after reboot.
+This makes it possible to extend the configuration page without modifying the internal library logic.
+
+### Registering a Custom Field
+
+Register custom fields before calling `HomeIoT_begin()`.
+
+```cpp
+registerCustomField({
+    "target_mac",
+    "Target MAC Address",
+    "AA:BB:CC:DD:EE:FF"
+});
+
+registerCustomField({
+    "broadcast_ip",
+    "Broadcast IP",
+    "192.168.1.255"
+});
+```
+
+Each field contains:
+
+| Member         | Description                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `key`          | Unique identifier used as the storage key.                    |
+| `label`        | Display name shown on the web configuration page.             |
+| `defaultValue` | Default value used when no saved configuration exists.        |
+| `value`        | Current runtime value (managed automatically by the library). |
+
+---
+
+### Reading a Value
+
+```cpp
+String mac = getCustomField("target_mac");
+```
+
+---
+
+### Updating a Value
+
+```cpp
+setCustomField(
+    "target_mac",
+    "11:22:33:44:55:66"
+);
+```
+
+The updated value will be stored automatically the next time the configuration is saved.
+
+---
+
+### Storage
+
+All custom fields are stored together with the built-in configuration in the same persistent storage:
+
+* ESP32 → Preferences (NVS)
+* ESP8266 → EEPROM (planned)
+
+Applications do not need to manually implement loading or saving logic.
+
+---
+
+### Typical Use Cases
+
+Examples of information that can be stored using Custom Fields:
+
+* Wake-on-LAN target MAC address
+* Broadcast IP
+* Static IP parameters
+* Calibration values
+* Sensor offsets
+* Device location
+* User-defined MQTT topics
+* API keys
+* Device-specific parameters
+
+Any application-specific configuration that should survive a reboot can be implemented as a Custom Field.
 
 ---
 
